@@ -1600,7 +1600,7 @@ module {
             return fields.toArray();
         };
 		
-		funct _validate(
+		func _validate(
 			map: HashMap.HashMap<Text, Variant.Variant>
 		): Result.Result<(), [Text]> {
             var errors = Buffer.Buffer<Text>(1);
