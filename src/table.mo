@@ -1609,7 +1609,7 @@ module {
             label l for((column, props) in columns.entries()) {
                 switch(map.get(column)) {
                     case null {
-						if(!props.nullable) {
+						if(props.nullable == false) {
 							errors.add(column # " can't be null");
 						};
                     }; 
@@ -1617,7 +1617,7 @@ module {
                         switch(val) {
                             // is value null?
                             case (#nil) {
-                                if(!props.nullable) {
+                                if(props.nullable == false) {
 									errors.add(column # " can't be null");
 								};
 							};
