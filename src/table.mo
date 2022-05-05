@@ -136,7 +136,7 @@ module {
                 options, 
                 func(o: ColumnOption): Bool = o == option)) {
                 case null null; 
-                case opt ?opt;
+                case opt opt;
             };
         };
 
