@@ -313,15 +313,15 @@ module {
                 };
             };
 
-            let currentMap = serialize(current, true);
-            _deleteFromIndexes(_id, current, currentMap);
-
             let map = serialize(entity, true);
 			switch(_validate(map)) {
                 case(#err(errors)) {
                     return #err(Text.join(",", errors.vals()));
                 };
                 case _ {
+					let currentMap = serialize(current, true);
+					_deleteFromIndexes(_id, current, currentMap);
+					
 					switch(_canInsert(entity, map)) {
 						case(#err(msg)) {
 							// readd the old entity
