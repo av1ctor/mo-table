@@ -55,8 +55,8 @@ module {
         sortable: Bool;
         nullable: Bool;
         partial: Bool;
-		min: Nat32;
-		max: Nat32;
+		min: Nat;
+		max: Nat;
     };
 
     type Id = Nat32;
