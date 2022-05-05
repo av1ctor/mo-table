@@ -1645,6 +1645,14 @@ module {
 									errors.add(column # " must be at most " # Nat32.toText(props.min));
 								};
 							};
+							case _ {
+								if(props.min > 0) {
+									errors.add("Min() validation not implemented for the type of column " # column);
+								};
+								if(props.max < 2**32) {
+									errors.add("Max() validation not implemented for the type of column " # column);
+								};
+							};
 						};
 					};
 				};
