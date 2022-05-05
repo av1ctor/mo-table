@@ -8,6 +8,7 @@ import Array "mo:base/Array";
 import Text "mo:base/Text";
 import Nat "mo:base/Nat";
 import Nat32 "mo:base/Nat32";
+import Nat64 "mo:base/Nat64";
 import Buffer "mo:base/Buffer";
 import HashMap "mo:base/HashMap";
 import Hash "mo:base/Hash";
@@ -31,6 +32,8 @@ module {
         #nullable;
         #partial;
         #multiple;
+		#min: Nat32;
+		#max: Nat32;
     };
 
     public type ColumnRequest = {
@@ -52,6 +55,8 @@ module {
         sortable: Bool;
         nullable: Bool;
         partial: Bool;
+		min: Nat32;
+		max: Nat32;
     };
 
     type Id = Nat32;
@@ -123,6 +128,15 @@ module {
                 func(o: ColumnOption): Bool = o == option)) {
                 case null false; 
                 case _ true;
+            };
+        };
+		
+		func findOption(options: [ColumnOption], option: ColumnOption): ?ColumnOption {
+            switch(Array.find(
+                options, 
+                func(o: ColumnOption): Bool = o == option)) {
+                case null null; 
+                case opt ?opt;
             };
         };
 
@@ -225,6 +239,24 @@ module {
                 nullable = hasOption(column.options, #nullable);
                 partial = hasOption(column.options, #partial);
                 multiple = hasOption(column.options, #multiple);
+				min = switch(findOption(column.options, #min)) {
+					case (?opt) {
+						switch(opt) {
+							case (#min(val)) val; 
+							case _ 0;
+						};
+					}; 
+					case _ 0;
+				};
+				max = switch(findOption(column.options, #max)) {
+					case (?opt) {
+						switch(opt) {
+							case (#max(val)) val; 
+							case _ 2**64;
+						};
+					}; 
+					case _ 2**64;
+				};
             };
             columns.put(col.name, col);
             
@@ -247,16 +279,23 @@ module {
             };
             
             let map = serialize(entity, true);
-            switch(_canInsert(entity, map)) {
+			switch(_validate(map)) {
                 case(#err(msg)) {
                     return #err(msg)
                 };
                 case _ {
-                    rows.add(?entity);
-                    _insertIntoIndexes(_id, entity, map);
-                    return #ok(_id);
-                };
-            };
+					switch(_canInsert(entity, map)) {
+						case(#err(msg)) {
+							return #err(msg)
+						};
+						case _ {
+							rows.add(?entity);
+							_insertIntoIndexes(_id, entity, map);
+							return #ok(_id);
+						};
+					};
+				};
+			};
         };
 
         ///
@@ -1560,6 +1599,64 @@ module {
 
             return fields.toArray();
         };
+		
+		funct _validate(
+			map: HashMap.HashMap<Text, Variant.Variant>
+		): Result.Result<(), [Text]> {
+            var errors = Buffer.Buffer<Text>(1);
+			
+			// for each column..
+            label l for((column, props) in columns.entries()) {
+                switch(map.get(column)) {
+                    case null {
+						if(!props.nullable) {
+							errors.add(column # " can't be null");
+						};
+                    }; 
+                    case (?val) {
+                        switch(val) {
+                            // is value null?
+                            case (#nil) {
+                                if(!props.nullable) {
+									errors.add(column # " can't be null");
+								};
+							};
+							case (#text(val)) {
+								if(val.size() < props.min) {
+									errors.add(column # " must be at least " # Nat32.toText(props.min) # " long");
+								}
+								else if(val.size() > props.max) {
+									errors.add(column # " must be at most " # Nat32.toText(props.min) # " long");
+								};
+							};
+							case (#nat32(val)) {
+								if(val < props.min) {
+									errors.add(column # " must be at least " # Nat32.toText(props.min));
+								}
+								else if(val > props.max) {
+									errors.add(column # " must be at most " # Nat32.toText(props.min));
+								};
+							};
+							case (#nat64(val)) {
+								if(val < Nat64.fromNat(Nat32.toNat(props.min))) {
+									errors.add(column # " must be at least " # Nat32.toText(props.min));
+								}
+								else if(val > Nat64.fromNat(Nat32.toNat(props.max))) {
+									errors.add(column # " must be at most " # Nat32.toText(props.min));
+								};
+							};
+						};
+					};
+				};
+			};
+			
+			if(errors.size() == 0) {
+				return #ok();
+			}
+			else {
+				return #err(errors.toArray());
+			};
+		};
 
         ///
         public func backup(
