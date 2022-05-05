@@ -1,6 +1,6 @@
 /**
  * Table implementation
- * Copyright 2021 André Vicentini (https://github.com/av1ctor/)
+ * Copyright 2021-2022 André Vicentini (https://github.com/av1ctor/)
  * Licensed under the Apache license Version 2.0
  */
 
@@ -122,24 +122,6 @@ module {
             schema.columns.size(), Text.equal, Text.hash
         );
 
-        func hasOption(options: [ColumnOption], option: ColumnOption): Bool {
-            switch(Array.find(
-                options, 
-                func(o: ColumnOption): Bool = o == option)) {
-                case null false; 
-                case _ true;
-            };
-        };
-		
-		func findOption(options: [ColumnOption], option: ColumnOption): ?ColumnOption {
-            switch(Array.find(
-                options, 
-                func(o: ColumnOption): Bool = o == option)) {
-                case null null; 
-                case opt opt;
-            };
-        };
-
         func _cmpText(a: Text, b: Text): Int {
             switch(Text.compare(a, b)) {
                 case (#less) {
@@ -231,33 +213,40 @@ module {
         };
 
         for (column in schema.columns.vals()) {
+            var primary = false;
+            var unique = false;
+            var sortable = false;
+            var nullable = false;
+            var partial = false;
+            var multiple = false;
+			var min = 0;
+			var max = 2**32;
+
+            for (option in column.options.vals()) {
+                switch(option) {
+                    case (#primary) primary := true;
+                    case (#unique) unique := true;
+                    case (#sortable) sortable := true;
+                    case (#nullable) nullable := true;
+                    case (#partial) partial := true;
+                    case (#multiple) multiple := true;
+                    case (#min(val)) min := val;
+                    case (#max(val)) max := val;
+                };
+            };
+
             let col = {
                 name = column.name;
-                primary = hasOption(column.options, #primary);
-                unique = hasOption(column.options, #unique);
-                sortable = hasOption(column.options, #sortable);
-                nullable = hasOption(column.options, #nullable);
-                partial = hasOption(column.options, #partial);
-                multiple = hasOption(column.options, #multiple);
-				min = switch(findOption(column.options, #min)) {
-					case null 0;
-					case (?opt) {
-						switch(opt) {
-							case null 2**32;
-							case (#min(val)) val; 
-						};
-					}; 
-				};
-				max = switch(findOption(column.options, #max)) {
-					case null 2**32;
-					case (?opt) {
-						switch(opt) {
-							case null 2**32;
-							case (#max(val)) val; 
-						};
-					}; 
-				};
+                primary = primary;
+                unique = unique;
+                sortable = sortable;
+                nullable = nullable;
+                partial = partial;
+                multiple = multiple;
+				min = min;
+				max = max;
             };
+
             columns.put(col.name, col);
             
             _allocIndexes(col);
