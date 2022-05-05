@@ -240,22 +240,26 @@ module {
                 partial = hasOption(column.options, #partial);
                 multiple = hasOption(column.options, #multiple);
 				min = switch(findOption(column.options, #min)) {
+					case null {
+						0;
+					};
 					case (?opt) {
 						switch(opt) {
-							case (#min(val)) 0; //val; 
+							case (#min(val)) val; 
 							case _ 0;
 						};
 					}; 
-					case _ 0;
 				};
 				max = switch(findOption(column.options, #max)) {
+					case null {
+						2**32;
+					};
 					case (?opt) {
 						switch(opt) {
-							case (#max(val)) 0; //val; 
+							case (#max(val)) val; 
 							case _ 2**32;
 						};
 					}; 
-					case _ 2**32;
 				};
             };
             columns.put(col.name, col);
