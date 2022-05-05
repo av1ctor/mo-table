@@ -280,13 +280,13 @@ module {
             
             let map = serialize(entity, true);
 			switch(_validate(map)) {
-                case(#err(msg)) {
-                    return #err(msg)
+                case(#err(errors)) {
+                    return #err(Text.join(",", errors.vals()));
                 };
                 case _ {
 					switch(_canInsert(entity, map)) {
 						case(#err(msg)) {
-							return #err(msg)
+							return #err(msg);
 						};
 						case _ {
 							rows.add(?entity);
@@ -328,18 +328,25 @@ module {
             _deleteFromIndexes(_id, current, currentMap);
 
             let map = serialize(entity, true);
-            switch(_canInsert(entity, map)) {
-                case(#err(msg)) {
-                    // readd the old entity
-                    _insertIntoIndexes(_id, current, currentMap);
-                    #err(msg);
+			switch(_validate(map)) {
+                case(#err(errors)) {
+                    return #err(Text.join(",", errors.vals()));
                 };
                 case _ {
-                    rows.put(Nat32.toNat(_id) - 1, ?entity);
-                    _insertIntoIndexes(_id, entity, map);
-                    #ok();
-                };
-            };
+					switch(_canInsert(entity, map)) {
+						case(#err(msg)) {
+							// readd the old entity
+							_insertIntoIndexes(_id, current, currentMap);
+							#err(msg);
+						};
+						case _ {
+							rows.put(Nat32.toNat(_id) - 1, ?entity);
+							_insertIntoIndexes(_id, entity, map);
+							#ok();
+						};
+					};
+				};
+			};
         };
 
         ///
