@@ -242,7 +242,7 @@ module {
 				min = switch(findOption(column.options, #min)) {
 					case (?opt) {
 						switch(opt) {
-							case (#min(val)) val; 
+							case (#min(val)) 0; //val; 
 							case _ 0;
 						};
 					}; 
@@ -251,7 +251,7 @@ module {
 				max = switch(findOption(column.options, #max)) {
 					case (?opt) {
 						switch(opt) {
-							case (#max(val)) val; 
+							case (#max(val)) 0; //val; 
 							case _ 2**32;
 						};
 					}; 
