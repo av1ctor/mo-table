@@ -32,8 +32,8 @@ module {
         #nullable;
         #partial;
         #multiple;
-		#min: Nat32;
-		#max: Nat32;
+		#min: Nat;
+		#max: Nat;
     };
 
     public type ColumnRequest = {
@@ -252,10 +252,10 @@ module {
 					case (?opt) {
 						switch(opt) {
 							case (#max(val)) val; 
-							case _ 2**64;
+							case _ 2**32;
 						};
 					}; 
-					case _ 2**64;
+					case _ 2**32;
 				};
             };
             columns.put(col.name, col);
@@ -1630,18 +1630,18 @@ module {
 								};
 							};
 							case (#nat32(val)) {
-								if(val < props.min) {
+								if(Nat32.toNat(val) < props.min) {
 									errors.add(column # " must be at least " # Nat32.toText(props.min));
 								}
-								else if(val > props.max) {
+								else if(Nat32.toNat(val) > props.max) {
 									errors.add(column # " must be at most " # Nat32.toText(props.min));
 								};
 							};
 							case (#nat64(val)) {
-								if(val < Nat64.fromNat(Nat32.toNat(props.min))) {
+								if(Nat64.toNat(val) < props.min) {
 									errors.add(column # " must be at least " # Nat32.toText(props.min));
 								}
-								else if(val > Nat64.fromNat(Nat32.toNat(props.max))) {
+								else if(Nat64.toNat(val) > props.max) {
 									errors.add(column # " must be at most " # Nat32.toText(props.min));
 								};
 							};
