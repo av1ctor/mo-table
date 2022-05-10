@@ -1649,7 +1649,7 @@ module {
 									errors.add(column # " must have at least " # Nat.toText(props.min) # " elements");
 								}
 								else if(arr.size() > props.max) {
-									errors.add(column # " must have at most " # Nat.toText(props.max) " elements");
+									errors.add(column # " must have at most " # Nat.toText(props.max) # " elements");
 								};
 							};
 							case _ {
