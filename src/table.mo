@@ -1616,13 +1616,16 @@ module {
                                 if(props.nullable == false) {
 									errors.add(column # " can't be null");
 								};
+								if(props.min > 0) {
+									errors.add(column # " must be at least " # Nat.toText(props.min));
+								};
 							};
 							case (#text(val)) {
 								if(val.size() < props.min) {
 									errors.add(column # " must be at least " # Nat.toText(props.min) # " long");
 								}
 								else if(val.size() > props.max) {
-									errors.add(column # " must be at most " # Nat.toText(props.min) # " long");
+									errors.add(column # " must be at most " # Nat.toText(props.max) # " long");
 								};
 							};
 							case (#nat32(val)) {
@@ -1630,7 +1633,7 @@ module {
 									errors.add(column # " must be at least " # Nat.toText(props.min));
 								}
 								else if(Nat32.toNat(val) > props.max) {
-									errors.add(column # " must be at most " # Nat.toText(props.min));
+									errors.add(column # " must be at most " # Nat.toText(props.max));
 								};
 							};
 							case (#nat64(val)) {
@@ -1638,7 +1641,15 @@ module {
 									errors.add(column # " must be at least " # Nat.toText(props.min));
 								}
 								else if(Nat64.toNat(val) > props.max) {
-									errors.add(column # " must be at most " # Nat.toText(props.min));
+									errors.add(column # " must be at most " # Nat.toText(props.max));
+								};
+							};
+							case (#array(arr)) {
+								if(arr.size() < props.min) {
+									errors.add(column # " must have at least " # Nat.toText(props.min) # " elements");
+								}
+								else if(arr.size() > props.max) {
+									errors.add(column # " must have at most " # Nat.toText(props.max) " elements");
 								};
 							};
 							case _ {
