@@ -459,13 +459,32 @@ module {
                 return #err("No index found for column " # crit.key);
             };
 
+            var set = Set.empty<Id>();
+
             switch(crit.value) {
                 case (#nil) {
-                    //TODO: implement isnull
-                    return #err("Operator isnull not implemented yet");
+                    if(col.unique) {
+                        switch(nullUniqIndexes.get(crit.key)) {
+                            case null {
+                                return #err("No index found for column " # crit.key);
+                            };
+                            case (?index) {
+                                return #err("Isnull not implemented for unique indexes");
+                            };
+                        };
+                    }
+                    else if(col.sortable) {
+                        switch(nullMultIndexes.get(crit.key)) {
+                            case null {
+                                return #err("No index found for column " # crit.key);
+                            };
+                            case (?indexIds) {
+                                set := indexIds;
+                            };
+                        };
+                    };
                 };
                 case (val) {
-                    var set = Set.empty<Id>();
                     if(col.unique) {
                         switch(uniqIndexes.get(crit.key)) {
                             case null {
@@ -500,16 +519,15 @@ module {
                             };
                         };
                     };
-
-                    if(Set.size<Id>(ids) == 0) {
-                        return #ok(set);
-                    }
-                    else {
-                        return #ok(Set.intersect<Id>(ids, set, _equalId));
-                    };
-
                 };
             };        
+
+            if(Set.size<Id>(ids) == 0) {
+                return #ok(set);
+            }
+            else {
+                return #ok(Set.intersect<Id>(ids, set, _equalId));
+            };                
         };
 
         func _filterByContains(
