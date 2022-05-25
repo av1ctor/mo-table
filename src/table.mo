@@ -1662,6 +1662,14 @@ module {
 									errors.add(column # " must be at most " # Nat.toText(props.max));
 								};
 							};
+							case (#nat(val)) {
+								if(val < props.min) {
+									errors.add(column # " must be at least " # Nat.toText(props.min));
+								}
+								else if(val > props.max) {
+									errors.add(column # " must be at most " # Nat.toText(props.max));
+								};
+							};
 							case (#array(arr)) {
 								if(arr.size() < props.min) {
 									errors.add(column # " must have at least " # Nat.toText(props.min) # " elements");
