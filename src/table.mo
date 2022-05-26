@@ -1594,26 +1594,6 @@ module {
             };
         };
 
-        func _entityToFields(
-            entity: E): 
-        [(Text, Variant.Variant)] {
-            let fields = Buffer.Buffer<(Text, Variant.Variant)>(10);
-
-            let map = serialize(entity, false);
-
-            for((col, _) in columns.entries()) {
-                switch(map.get(col)) {
-                    case null {
-                    };
-                    case (?val) {
-                        fields.add(col, val);
-                    };
-                };
-            };
-
-            return fields.toArray();
-        };
-		
 		func _validate(
 			map: HashMap.HashMap<Text, Variant.Variant>
 		): Result.Result<(), [Text]> {
@@ -1716,6 +1696,20 @@ module {
             let res = entities.toArray();
             D.print("end table('" # schema.name # "') backup: " # Nat.toText(res.size()) # " entities");
             return res;
+        };
+		
+		func _entityToFields(
+            entity: E
+        ): [(Text, Variant.Variant)] {
+            let fields = Buffer.Buffer<(Text, Variant.Variant)>(10);
+
+            let map = serialize(entity, false);
+
+            for((key, val) in map.entries()) {
+                fields.add(key, val);
+            };
+
+            return fields.toArray();
         };
 
         func _fieldsToMap(
