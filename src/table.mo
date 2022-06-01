@@ -727,13 +727,11 @@ module {
                 case null {
                 };
                 case (?sortBy) {
-                    if(sortBy.size() > 1) {
-                        //TODO: implement multi-sorting
-                        return #err("Multi sorting is no supported yet :/");
-                    };
-
-                    for(sort in sortBy.vals()) {
+                    var i = sortBy.size();
+                    while(i > 0) {
+                        let sort = sortBy[i - 1];
                         Sort.sort<E>(res, sort.cmp);
+                        i -= 1;
                     };
                 };
             };
@@ -771,6 +769,11 @@ module {
                     return _findAllById(#asc, limit);
                 };
                 case (?sortBy) {
+                    if(sortBy.size() > 1) {
+                        //TODO: implement multi-sorting
+                        return #err("Multi sorting is no supported yet :/");
+                    };
+
                     let sort = sortBy[0];
                     switch(sort.key) {
                         case "_id" {
