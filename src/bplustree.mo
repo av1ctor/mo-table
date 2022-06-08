@@ -8,6 +8,8 @@ import Nat "mo:base/Nat";
 import Nat32 "mo:base/Nat32";
 import Iter "mo:base/Iter";
 import Option "mo:base/Option";
+import Array "mo:base/Array";
+import Buffer "mo:base/Buffer";
 import D "mo:base/Debug";
 
 module {
@@ -213,6 +215,131 @@ module {
             return e;
         };
 
+        func _findElementsNeq(
+            node: Node<K, V>,
+            key: K
+        ): [Element<K, V>] {
+            let res = Buffer.Buffer<Element<K, V>>(10);
+
+            var e = node.elements.head;
+            label l loop {
+                switch(e) {
+                    case null {
+                        break l;
+                    };
+                    case (?elm) {
+                        if(cmp(key, elm.key) != 0) {
+                            res.add(elm);
+                        };
+
+                        e := elm.next;
+                    };
+                };
+            };
+
+            return res.toArray();
+        };
+
+        func _findElementsLt(
+            node: Node<K, V>,
+            key: K
+        ): [Element<K, V>] {
+            let res = Buffer.Buffer<Element<K, V>>(10);
+
+            var e = node.elements.head;
+            label l loop {
+                switch(e) {
+                    case null {
+                        break l;
+                    };
+                    case (?elm) {
+                        if(cmp(key, elm.key) < 0) {
+                            res.add(elm);
+                        };
+
+                        e := elm.next;
+                    };
+                };
+            };
+
+            return res.toArray();
+        };
+
+        func _findElementsLte(
+            node: Node<K, V>,
+            key: K
+        ): [Element<K, V>] {
+            let res = Buffer.Buffer<Element<K, V>>(10);
+
+            var e = node.elements.head;
+            label l loop {
+                switch(e) {
+                    case null {
+                        break l;
+                    };
+                    case (?elm) {
+                        if(cmp(key, elm.key) <= 0) {
+                            res.add(elm);
+                        };
+
+                        e := elm.next;
+                    };
+                };
+            };
+
+            return res.toArray();
+        };
+
+        func _findElementsGt(
+            node: Node<K, V>,
+            key: K
+        ): [Element<K, V>] {
+            let res = Buffer.Buffer<Element<K, V>>(10);
+
+            var e = node.elements.head;
+            label l loop {
+                switch(e) {
+                    case null {
+                        break l;
+                    };
+                    case (?elm) {
+                        if(cmp(key, elm.key) > 0) {
+                            res.add(elm);
+                        };
+
+                        e := elm.next;
+                    };
+                };
+            };
+
+            return res.toArray();
+        };
+
+        func _findElementsGte(
+            node: Node<K, V>,
+            key: K
+        ): [Element<K, V>] {
+            let res = Buffer.Buffer<Element<K, V>>(10);
+
+            var e = node.elements.head;
+            label l loop {
+                switch(e) {
+                    case null {
+                        break l;
+                    };
+                    case (?elm) {
+                        if(cmp(key, elm.key) >= 0) {
+                            res.add(elm);
+                        };
+
+                        e := elm.next;
+                    };
+                };
+            };
+
+            return res.toArray();
+        };
+
         ///
         public func get(
             key: K
@@ -232,6 +359,76 @@ module {
                     return e.value;
                 }
             };
+        };
+
+        ///
+        public func findNeq(
+            key: K
+        ): [?V] {
+            if(Option.isNull(root.elements.head)) {
+                return [];
+            };
+
+            let l = _findLeaf(key);
+            let elms = _findElementsNeq(l, key);
+
+            return Array.map(elms, func(e: Element<K, V>): ?V = e.value);
+        };
+
+        ///
+        public func findLt(
+            key: K
+        ): [?V] {
+            if(Option.isNull(root.elements.head)) {
+                return [];
+            };
+
+            let l = _findLeaf(key);
+            let elms = _findElementsLt(l, key);
+
+            return Array.map(elms, func(e: Element<K, V>): ?V = e.value);
+        };
+
+        ///
+        public func findLte(
+            key: K
+        ): [?V] {
+            if(Option.isNull(root.elements.head)) {
+                return [];
+            };
+
+            let l = _findLeaf(key);
+            let elms = _findElementsLte(l, key);
+
+            return Array.map(elms, func(e: Element<K, V>): ?V = e.value);
+        };
+
+        ///
+        public func findGt(
+            key: K
+        ): [?V] {
+            if(Option.isNull(root.elements.head)) {
+                return [];
+            };
+
+            let l = _findLeaf(key);
+            let elms = _findElementsGt(l, key);
+
+            return Array.map(elms, func(e: Element<K, V>): ?V = e.value);
+        };
+
+        ///
+        public func findGte(
+            key: K
+        ): [?V] {
+            if(Option.isNull(root.elements.head)) {
+                return [];
+            };
+
+            let l = _findLeaf(key);
+            let elms = _findElementsGte(l, key);
+
+            return Array.map(elms, func(e: Element<K, V>): ?V = e.value);
         };
 
         ///
