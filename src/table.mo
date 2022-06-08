@@ -64,6 +64,11 @@ module {
     public type CriteriaOp = {
         #eq;
         #contains;
+        #neq;
+        #lt;
+        #lte;
+        #gt;
+        #gte;
     };
     
     public type Criteria = {
@@ -530,6 +535,108 @@ module {
             };                
         };
 
+        func _filterByOther(
+            crit: Criteria,
+            ids: Set.Set<Id>,
+            col: Column
+        ): Result.Result<Set.Set<Id>, Text> {
+            if(not (col.unique or col.sortable)) {
+                return #err("No index found for column " # crit.key);
+            };
+
+            var set = Set.empty<Id>();
+
+            switch(crit.value) {
+                case (#nil) {
+                    return #err("Operator doesn't support #nil");
+                };
+                case (val) {
+                    if(col.unique) {
+                        switch(uniqIndexes.get(crit.key)) {
+                            case null {
+                                return #err("No index found for column " # crit.key);
+                            };
+                            case (?index) {
+                                let _ids = switch(crit.op) {
+                                    case (#neq) index.findNeq(val);
+                                    case (#lt) index.findLt(val);
+                                    case (#lte) index.findLte(val);
+                                    case (#gt) index.findGt(val);
+                                    case (#gte) index.findGte(val);
+                                    case _ [];
+                                };
+                                
+                                if(_ids.size() == 0) {
+                                    return #ok(Set.empty<Id>());
+                                }
+                                else {
+                                    set := Set.fromArray<Id>(
+                                        Array.map(
+                                            Array.filter(
+                                                _ids, 
+                                                func (_id: ?Id): Bool = Option.isSome(_id)
+                                            ), 
+                                            func (_id: ?Id): Id = 
+                                                switch(_id) {
+                                                    case null 0;
+                                                    case (?_id) _id;
+                                                },
+                                        ),
+                                        _hashId, 
+                                        _equalId
+                                    );
+                                };
+                            };
+                        };
+                    }
+                    else if(col.sortable) {
+                        switch(multIndexes.get(crit.key)) {
+                            case null {
+                                return #err("No index found for column " # crit.key);
+                            };
+                            case (?index) {
+                                let _sets = switch(crit.op) {
+                                    case (#neq) index.findNeq(val);
+                                    case (#lt) index.findLt(val);
+                                    case (#lte) index.findLte(val);
+                                    case (#gt) index.findGt(val);
+                                    case (#gte) index.findGte(val);
+                                    case _ [];
+                                };
+
+                                if(_sets.size() == 0) {
+                                    return #ok(Set.empty<Id>());
+                                }
+                                else {
+                                    for(_set in _sets.vals()) {
+                                        switch(_set) {
+                                            case (?_set) {
+                                                set := Set.union<Id>(
+                                                    set, 
+                                                    _set,
+                                                    _equalId
+                                                );
+                                            };
+                                            case null 
+                                            {
+                                            };
+                                        };
+                                    };
+                                };
+                            };
+                        };
+                    };
+                };
+            };        
+
+            if(Set.size<Id>(ids) == 0) {
+                return #ok(set);
+            }
+            else {
+                return #ok(Set.intersect<Id>(ids, set, _equalId));
+            };                
+        };
+
         func _filterByContains(
             crit: Criteria,
             ids: Set.Set<Id>
@@ -655,6 +762,16 @@ module {
                                             };
                                             case (#contains) {
                                                 switch(_filterByContains(crit, set)) {
+                                                    case (#err(msg)) {
+                                                        return #err(msg);
+                                                    };
+                                                    case (#ok(res)) {
+                                                        set := res;
+                                                    };
+                                                };
+                                            };
+                                            case _ {
+                                                switch(_filterByOther(crit, set, col)) {
                                                     case (#err(msg)) {
                                                         return #err(msg);
                                                     };
@@ -1245,6 +1362,16 @@ module {
                                             };
                                             case (#contains) {
                                                 switch(_filterByContains(crit, set)) {
+                                                    case (#err(msg)) {
+                                                        return #err(msg);
+                                                    };
+                                                    case (#ok(res)) {
+                                                        set := res;
+                                                    };
+                                                };
+                                            };
+                                            case _ {
+                                                switch(_filterByOther(crit, set, col)) {
                                                     case (#err(msg)) {
                                                         return #err(msg);
                                                     };
