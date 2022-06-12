@@ -225,7 +225,7 @@ module {
             var partial = false;
             var multiple = false;
 			var min = 0;
-			var max = 2**32;
+			var max = 2**64;
 
             for (option in column.options.vals()) {
                 switch(option) {
