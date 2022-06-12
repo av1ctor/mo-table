@@ -203,7 +203,7 @@ module {
                         break l;
                     };
                     case (?elm) {
-                        if(cmp(key, elm.key) == 0) {
+                        if(cmp(elm.key, key) == 0) {
                             break l;
                         };
 
@@ -228,7 +228,7 @@ module {
                         break l;
                     };
                     case (?elm) {
-                        if(cmp(key, elm.key) != 0) {
+                        if(cmp(elm.key, key) != 0) {
                             res.add(elm);
                         };
 
@@ -253,7 +253,7 @@ module {
                         break l;
                     };
                     case (?elm) {
-                        if(cmp(key, elm.key) < 0) {
+                        if(cmp(elm.key, key) < 0) {
                             res.add(elm);
                         };
 
@@ -278,7 +278,7 @@ module {
                         break l;
                     };
                     case (?elm) {
-                        if(cmp(key, elm.key) <= 0) {
+                        if(cmp(elm.key, key) <= 0) {
                             res.add(elm);
                         };
 
@@ -303,7 +303,7 @@ module {
                         break l;
                     };
                     case (?elm) {
-                        if(cmp(key, elm.key) > 0) {
+                        if(cmp(elm.key, key) > 0) {
                             res.add(elm);
                         };
 
@@ -328,7 +328,7 @@ module {
                         break l;
                     };
                     case (?elm) {
-                        if(cmp(key, elm.key) >= 0) {
+                        if(cmp(elm.key, key) >= 0) {
                             res.add(elm);
                         };
 
