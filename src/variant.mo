@@ -5,6 +5,8 @@
  */
 
 import Text "mo:base/Text";
+import Array "mo:base/Array";
+import HashMap "mo:base/HashMap";
 import Nat "mo:base/Nat";
 import Nat8 "mo:base/Nat8";
 import Nat16 "mo:base/Nat16";
@@ -22,6 +24,11 @@ import Order "mo:base/Order";
 import Iter "mo:base/Iter";
 
 module {
+    public type MapEntry = {
+        key: Text;
+        value: Variant;
+    };
+
     public type Variant = {
         #nil;
         #text: Text;
@@ -39,6 +46,7 @@ module {
         #bool: Bool;
         #blob: Blob;
         #array: [Variant];
+        #map: [MapEntry];
     };
 
     public func compare(
@@ -103,6 +111,33 @@ module {
                         let res = compare(av, bv);
                         if(res != #equal) {
                             return res;
+                        };
+                    };
+                };
+
+                return #equal;
+            };
+            case(#map(a), #map(b)) {
+                if(a.size() != b.size()) {
+                    return if(a.size() < b.size()) 
+                        #less
+                    else
+                        #greater;
+                };
+
+                if(a.size() > 0) {
+                    for(i in Iter.range(0, a.size() - 1)) {
+                        let av = a[i];
+                        switch(Array.find(b, func(kv: MapEntry): Bool = kv.key == av.key)) {
+                            case null {
+                                return #greater;
+                            };
+                            case (?bv) {
+                                let res = compare(av.value, bv.value);
+                                if(res != #equal) {
+                                    return res;
+                                };
+                            };
                         };
                     };
                 };
@@ -544,6 +579,70 @@ module {
     ): ?[Variant] {
         switch(v) {
             case (?#array(val)) ?val;
+            case _ null;
+        };
+    };
+
+    func _mapToHashMap(
+        map: [MapEntry]
+    ): HashMap.HashMap<Text, Variant> {
+        let hm = HashMap.HashMap<Text, Variant>(map.size(), Text.equal, Text.hash);
+        for(e in map.vals()) {
+            hm.put(e.key, e.value);
+        };
+        hm;
+    };
+
+    public func getMap(
+        v: Variant
+    ): [MapEntry] {
+        switch(v) {
+            case (#map(val)) val;
+            case _ [];
+        };
+    };
+
+    public func getOptMap(
+        v: ?Variant
+    ): [MapEntry] {
+        switch(v) {
+            case (?#map(val)) val;
+            case _ [];
+        };
+    };
+
+    public func getOptMapOpt(
+        v: ?Variant
+    ): ?[MapEntry] {
+        switch(v) {
+            case (?#map(val)) ?val;
+            case _ null;
+        };
+    };
+
+    public func getMapAsHM(
+        v: Variant
+    ): HashMap.HashMap<Text, Variant> {
+        switch(v) {
+            case (#map(val)) _mapToHashMap(val);
+            case _ HashMap.HashMap<Text, Variant>(0, Text.equal, Text.hash);
+        };
+    };
+
+    public func getOptMapAsHM(
+        v: ?Variant
+    ): HashMap.HashMap<Text, Variant> {
+        switch(v) {
+            case (?#map(val)) _mapToHashMap(val);
+            case _ HashMap.HashMap<Text, Variant>(0, Text.equal, Text.hash);
+        };
+    };
+
+    public func getOptMapOptAsHM(
+        v: ?Variant
+    ): ?HashMap.HashMap<Text, Variant> {
+        switch(v) {
+            case (?#map(val)) ?_mapToHashMap(val);
             case _ null;
         };
     };
