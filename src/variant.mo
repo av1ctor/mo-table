@@ -6,6 +6,7 @@
 
 import Text "mo:base/Text";
 import Array "mo:base/Array";
+import Buffer "mo:base/Buffer";
 import HashMap "mo:base/HashMap";
 import Nat "mo:base/Nat";
 import Nat8 "mo:base/Nat8";
@@ -583,7 +584,7 @@ module {
         };
     };
 
-    func _mapToHashMap(
+    public func mapToHashMap(
         map: [MapEntry]
     ): HashMap.HashMap<Text, Variant> {
         let hm = HashMap.HashMap<Text, Variant>(map.size(), Text.equal, Text.hash);
@@ -591,6 +592,16 @@ module {
             hm.put(e.key, e.value);
         };
         hm;
+    };
+
+    public func hashMapToMap(
+        hm: HashMap.HashMap<Text, Variant>
+    ): [MapEntry] {
+        let map = Buffer.Buffer<MapEntry>(hm.size());
+        for(e in hm.entries()) {
+            map.add({key = e.0; value = e.1});
+        };
+        map.toArray();
     };
 
     public func getMap(
@@ -624,7 +635,7 @@ module {
         v: Variant
     ): HashMap.HashMap<Text, Variant> {
         switch(v) {
-            case (#map(val)) _mapToHashMap(val);
+            case (#map(val)) mapToHashMap(val);
             case _ HashMap.HashMap<Text, Variant>(0, Text.equal, Text.hash);
         };
     };
@@ -633,7 +644,7 @@ module {
         v: ?Variant
     ): HashMap.HashMap<Text, Variant> {
         switch(v) {
-            case (?#map(val)) _mapToHashMap(val);
+            case (?#map(val)) mapToHashMap(val);
             case _ HashMap.HashMap<Text, Variant>(0, Text.equal, Text.hash);
         };
     };
@@ -642,7 +653,7 @@ module {
         v: ?Variant
     ): ?HashMap.HashMap<Text, Variant> {
         switch(v) {
-            case (?#map(val)) ?_mapToHashMap(val);
+            case (?#map(val)) ?mapToHashMap(val);
             case _ null;
         };
     };
