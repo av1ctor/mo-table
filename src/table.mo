@@ -1861,16 +1861,15 @@ module {
             for(entry in entities.vals()) {
                 let map = _fieldsToMap(entry);
                 let _id = Variant.getOptNat32(map.get("_id"));
-                if(_id == i) {
-                    let entity = deserialize(map);
-                    rows.add(?entity);
-                    let mapLC = serialize(entity, true);
-                    _insertIntoIndexes(_id, entity, mapLC);
-                }
-                else {
+                while(_id > i) {
                     rows.add(null);
+                    i += 1;
                 };
-                i += 1;
+                let entity = deserialize(map);
+                rows.add(?entity);
+                let mapLC = serialize(entity, true);
+                _insertIntoIndexes(_id, entity, mapLC);
+				i += 1;
             };
             D.print("end table('" # schema.name # "') restore: " # Nat.toText(rows.size()) # " rows");
         };
