@@ -340,6 +340,32 @@ module {
             return res.toArray();
         };
 
+        func _findElementsBetween(
+            node: Node<K, V>,
+            a: K,
+            b: K
+        ): [Element<K, V>] {
+            let res = Buffer.Buffer<Element<K, V>>(10);
+
+            var e = node.elements.head;
+            label l loop {
+                switch(e) {
+                    case null {
+                        break l;
+                    };
+                    case (?elm) {
+                        if(cmp(elm.key, a) >= 0 and cmp(elm.key, b) <= 0) {
+                            res.add(elm);
+                        };
+
+                        e := elm.next;
+                    };
+                };
+            };
+
+            return res.toArray();
+        };
+
         ///
         public func get(
             key: K
@@ -427,6 +453,21 @@ module {
 
             let l = _findLeaf(key);
             let elms = _findElementsGte(l, key);
+
+            return Array.map(elms, func(e: Element<K, V>): ?V = e.value);
+        };
+
+        ///
+        public func findBetween(
+            a: K,
+            b: K
+        ): [?V] {
+            if(Option.isNull(root.elements.head)) {
+                return [];
+            };
+
+            let l = _findLeaf(a);
+            let elms = _findElementsBetween(l, a, b);
 
             return Array.map(elms, func(e: Element<K, V>): ?V = e.value);
         };

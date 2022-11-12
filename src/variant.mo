@@ -48,6 +48,7 @@ module {
         #blob: Blob;
         #array: [Variant];
         #map: [MapEntry];
+        #tuple: (Variant, Variant);
     };
 
     public func compare(
@@ -144,6 +145,22 @@ module {
                 };
 
                 return #equal;
+            };
+            case (#tuple(a), #tuple(b)) {
+                switch(compare(a.0, b.0), compare(a.1, b.1)) {
+                    case (#equal, #equal) {
+                        return #equal;
+                    };
+                    case (#equal, other) {
+                        return other;
+                    };
+                    case (#less, _) {
+                        return #less;
+                    };
+                    case (#greater, _) {
+                        return #greater;
+                    };
+                };
             };
             case (#nil, #nil) {
                 return #equal;

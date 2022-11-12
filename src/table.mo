@@ -69,6 +69,7 @@ module {
         #lte;
         #gt;
         #gte;
+        #between;
     };
     
     public type Criteria = {
@@ -563,6 +564,16 @@ module {
                                     case (#lte) index.findLte(val);
                                     case (#gt) index.findGt(val);
                                     case (#gte) index.findGte(val);
+                                    case (#between) {
+                                        switch(val) {
+                                            case (#tuple(a, b)) {
+                                                index.findBetween(a, b);
+                                            };
+                                            case _ {
+                                                return #err("Value should be a tuple for column " # crit.key);
+                                            };
+                                        };
+                                    };
                                     case _ [];
                                 };
                                 
@@ -601,6 +612,16 @@ module {
                                     case (#lte) index.findLte(val);
                                     case (#gt) index.findGt(val);
                                     case (#gte) index.findGte(val);
+                                    case (#between) {
+                                        switch(val) {
+                                            case (#tuple(a, b)) {
+                                                index.findBetween(a, b);
+                                            };
+                                            case _ {
+                                                return #err("Value should be a tuple for column " # crit.key);
+                                            };
+                                        };
+                                    };
                                     case _ [];
                                 };
 
@@ -1869,7 +1890,7 @@ module {
                 rows.add(?entity);
                 let mapLC = serialize(entity, true);
                 _insertIntoIndexes(_id, entity, mapLC);
-				i += 1;
+                i += 1;
             };
             D.print("end table('" # schema.name # "') restore: " # Nat.toText(rows.size()) # " rows");
         };
