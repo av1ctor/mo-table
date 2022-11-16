@@ -126,7 +126,8 @@ module {
     
     public class BPlusTree<K, V>(
         order_: Nat,
-        cmp: (K, K) -> Int
+        cmp: (K, K) -> Int,
+        //toText: (K) -> Text
     ) {
         let order: Nat32 = Nat32.fromNat(order_);
         let minElements: Nat32 = ((order >> 1) + (order & 1)) - 1;
@@ -216,128 +217,260 @@ module {
         };
 
         func _findElementsNeq(
-            node: Node<K, V>,
+            leftMost: Node<K, V>,
             key: K
         ): [Element<K, V>] {
             let res = Buffer.Buffer<Element<K, V>>(10);
 
-            var e = node.elements.head;
-            label l loop {
-                switch(e) {
+            var n = ?leftMost;
+            label outer loop {
+                switch(n) {
                     case null {
-                        break l;
+                        break outer;
                     };
-                    case (?elm) {
-                        if(cmp(elm.key, key) != 0) {
-                            res.add(elm);
+                    case (?node) {
+                        var l = node.elements.head;
+                        label toleft loop {
+                            switch(l) {
+                                case null {
+                                    break toleft;
+                                };
+                                case (?elm) {
+                                    if(cmp(elm.key, key) != 0) {
+                                        res.add(elm);
+                                    };
+
+                                    l := elm.prev;
+                                };
+                            };
                         };
 
-                        e := elm.next;
+                        n := node.prev;
                     };
                 };
             };
 
-            return res.toArray();
+            Buffer.reverse<Element<K, V>>(res);
+            
+            n := ?leftMost;
+            label outer loop {
+                switch(n) {
+                    case null {
+                        break outer;
+                    };
+                    case (?node) {
+                        var r = node.elements.head;
+                        label toright loop {
+                            switch(r) {
+                                case null {
+                                    break toright;
+                                };
+                                case (?elm) {
+                                    if(cmp(elm.key, key) != 0) {
+                                        res.add(elm);
+                                    };
+
+                                    r := elm.next;
+                                };
+                            };
+                        };
+
+                        n := node.next;
+                    };
+                };
+            };
+
+            return Buffer.toArray(res);
         };
 
         func _findElementsLt(
-            node: Node<K, V>,
+            leftMost: Node<K, V>,
             key: K
         ): [Element<K, V>] {
             let res = Buffer.Buffer<Element<K, V>>(10);
 
-            var e = node.elements.head;
-            label l loop {
-                switch(e) {
+            var n = ?leftMost;
+            label outer loop {
+                switch(n) {
                     case null {
-                        break l;
+                        break outer;
                     };
-                    case (?elm) {
-                        if(cmp(elm.key, key) < 0) {
-                            res.add(elm);
+                    case (?node) {
+                        var e = node.elements.head;
+                        label inner loop {
+                            switch(e) {
+                                case null {
+                                    break inner;
+                                };
+                                case (?elm) {
+                                    if(cmp(elm.key, key) < 0) {
+                                        res.add(elm);
+                                    };
+
+                                    e := elm.prev;
+                                };
+                            };
                         };
 
-                        e := elm.next;
+                        n := node.prev;
                     };
                 };
             };
 
-            return res.toArray();
+            Buffer.reverse<Element<K, V>>(res);
+
+            return Buffer.toArray(res);
         };
 
         func _findElementsLte(
-            node: Node<K, V>,
+            leftMost: Node<K, V>,
             key: K
         ): [Element<K, V>] {
             let res = Buffer.Buffer<Element<K, V>>(10);
 
-            var e = node.elements.head;
-            label l loop {
-                switch(e) {
+            var n = ?leftMost;
+            label outer loop {
+                switch(n) {
                     case null {
-                        break l;
+                        break outer;
                     };
-                    case (?elm) {
-                        if(cmp(elm.key, key) <= 0) {
-                            res.add(elm);
+                    case (?node) {
+                        var e = node.elements.head;
+                        label inner loop {
+                            switch(e) {
+                                case null {
+                                    break inner;
+                                };
+                                case (?elm) {
+                                    if(cmp(elm.key, key) <= 0) {
+                                        res.add(elm);
+                                    };
+
+                                    e := elm.prev;
+                                };
+                            };
                         };
 
-                        e := elm.next;
+                        n := node.prev;
                     };
                 };
             };
 
-            return res.toArray();
+            Buffer.reverse<Element<K, V>>(res);
+
+            return Buffer.toArray(res);
         };
 
         func _findElementsGt(
-            node: Node<K, V>,
+            leftMost: Node<K, V>,
             key: K
         ): [Element<K, V>] {
             let res = Buffer.Buffer<Element<K, V>>(10);
 
-            var e = node.elements.head;
-            label l loop {
-                switch(e) {
+            var n = ?leftMost;
+            label outer loop {
+                switch(n) {
                     case null {
-                        break l;
+                        break outer;
                     };
-                    case (?elm) {
-                        if(cmp(elm.key, key) > 0) {
-                            res.add(elm);
+                    case (?node) {
+                        var e = node.elements.head;
+                        label inner loop {
+                            switch(e) {
+                                case null {
+                                    break inner;
+                                };
+                                case (?elm) {
+                                    if(cmp(elm.key, key) > 0) {
+                                        res.add(elm);
+                                    };
+
+                                    e := elm.next;
+                                };
+                            };
                         };
 
-                        e := elm.next;
+                        n := node.next;
                     };
                 };
             };
 
-            return res.toArray();
+            return Buffer.toArray(res);
         };
 
         func _findElementsGte(
-            node: Node<K, V>,
+            leftMost: Node<K, V>,
             key: K
         ): [Element<K, V>] {
             let res = Buffer.Buffer<Element<K, V>>(10);
 
-            var e = node.elements.head;
-            label l loop {
-                switch(e) {
+            var n = ?leftMost;
+            label outer loop {
+                switch(n) {
                     case null {
-                        break l;
+                        break outer;
                     };
-                    case (?elm) {
-                        if(cmp(elm.key, key) >= 0) {
-                            res.add(elm);
+                    case (?node) {
+                        var e = node.elements.head;
+                        label inner loop {
+                            switch(e) {
+                                case null {
+                                    break inner;
+                                };
+                                case (?elm) {
+                                    if(cmp(elm.key, key) >= 0) {
+                                        res.add(elm);
+                                    };
+
+                                    e := elm.next;
+                                };
+                            };
                         };
 
-                        e := elm.next;
+                        n := node.next;
                     };
                 };
             };
 
-            return res.toArray();
+            return Buffer.toArray(res);
+        };
+
+        func _findElementsBetween(
+            leftMost: Node<K, V>,
+            a: K,
+            b: K
+        ): [Element<K, V>] {
+            let res = Buffer.Buffer<Element<K, V>>(10);
+
+            var n = ?leftMost;
+            label outer loop {
+                switch(n) {
+                    case null {
+                        break outer;
+                    };
+                    case (?node) {
+                        var e = node.elements.head;
+                        label inner loop {
+                            switch(e) {
+                                case null {
+                                    break inner;
+                                };
+                                case (?elm) {
+                                    if(cmp(elm.key, a) >= 0 and cmp(elm.key, b) <= 0) {
+                                        res.add(elm);
+                                    };
+
+                                    e := elm.next;
+                                };
+                            };
+                        };
+
+                        n := node.next;
+                    };
+                };
+            };
+
+            return Buffer.toArray(res);
         };
 
         ///
@@ -429,6 +562,52 @@ module {
             let elms = _findElementsGte(l, key);
 
             return Array.map(elms, func(e: Element<K, V>): ?V = e.value);
+        };
+
+        ///
+        public func findBetween(
+            a: K,
+            b: K
+        ): [?V] {
+            if(Option.isNull(root.elements.head)) {
+                return [];
+            };
+
+            let l = _findLeaf(a);
+            let elms = _findElementsBetween(l, a, b);
+
+            return Array.map(elms, func(e: Element<K, V>): ?V = e.value);
+        };
+
+        public func dumpElements(
+            leftMost: ?Node<K, V>,
+            toText: (K) -> Text
+        ) {
+            var n = leftMost;
+            label outer loop {
+                switch(n) {
+                    case null {
+                        break outer;
+                    };
+                    case (?node) {
+                        var e = node.elements.head;
+                        label inner loop {
+                            switch(e) {
+                                case null {
+                                    break inner;
+                                };
+                                case (?elm) {
+                                    D.print(toText(elm.key));
+
+                                    e := elm.next;
+                                };
+                            };
+
+                            n := node.next;
+                        };
+                    };
+                };
+            };
         };
 
         ///

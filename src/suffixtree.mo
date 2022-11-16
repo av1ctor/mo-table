@@ -129,7 +129,7 @@ module {
                 text.add(char);
 
                 let rem = CharUtils.substring(remainder, i, size - 1);
-                let updated = update(node, text.toArray(), rem, value);
+                let updated = update(node, Buffer.toArray(text), rem, value);
 
                 let canonized = canonize(updated.0, updated.1);
                 node := canonized.0;

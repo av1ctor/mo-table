@@ -11,6 +11,7 @@ import Nat32 "mo:base/Nat32";
 import Nat64 "mo:base/Nat64";
 import Buffer "mo:base/Buffer";
 import HashMap "mo:base/HashMap";
+import TrieMap "mo:base/TrieMap";
 import Hash "mo:base/Hash";
 import Set "mo:base/TrieSet";
 import Iter "mo:base/Iter";
@@ -31,6 +32,7 @@ module {
         #sortable;
         #nullable;
         #partial;
+        #prefixed;
         #multiple;
 		#min: Nat;
 		#max: Nat;
@@ -55,6 +57,7 @@ module {
         sortable: Bool;
         nullable: Bool;
         partial: Bool;
+        prefixed: Bool;
 		min: Nat;
 		max: Nat;
     };
@@ -64,11 +67,13 @@ module {
     public type CriteriaOp = {
         #eq;
         #contains;
+        #startsWith;
         #neq;
         #lt;
         #lte;
         #gt;
         #gte;
+        #between;
     };
     
     public type Criteria = {
@@ -118,6 +123,9 @@ module {
             schema.columns.size(), Text.equal, Text.hash
         );
         let partIndexes = HashMap.HashMap<Text, SuffixTree.SuffixTree<Id>>(
+            schema.columns.size(), Text.equal, Text.hash
+        );
+        let prefixIndexes = HashMap.HashMap<Text, TrieMap.TrieMap<Text, Set.Set<Id>>>(
             schema.columns.size(), Text.equal, Text.hash
         );
         let nullUniqIndexes = HashMap.HashMap<Text, ?Id>(
@@ -206,6 +214,16 @@ module {
                 nullMultIndexes.put(col.name, Set.empty<Id>());
             };
 
+            if(col.prefixed) {
+                prefixIndexes.put(
+                    col.name, 
+                    TrieMap.TrieMap<Text, Set.Set<Id>>(
+                        Text.equal, 
+                        Text.hash
+                    )
+                );
+            };
+
             if(col.partial) {
                 partIndexes.put(
                     col.name, 
@@ -223,6 +241,7 @@ module {
             var sortable = false;
             var nullable = false;
             var partial = false;
+            var prefixed = false;
             var multiple = false;
 			var min = 0;
 			var max = 2**64;
@@ -234,6 +253,7 @@ module {
                     case (#sortable) sortable := true;
                     case (#nullable) nullable := true;
                     case (#partial) partial := true;
+                    case (#prefixed) prefixed := true;
                     case (#multiple) multiple := true;
                     case (#min(val)) min := val;
                     case (#max(val)) max := val;
@@ -247,6 +267,7 @@ module {
                 sortable = sortable;
                 nullable = nullable;
                 partial = partial;
+                prefixed = prefixed;
                 multiple = multiple;
 				min = min;
 				max = max;
@@ -563,6 +584,16 @@ module {
                                     case (#lte) index.findLte(val);
                                     case (#gt) index.findGt(val);
                                     case (#gte) index.findGte(val);
+                                    case (#between) {
+                                        switch(val) {
+                                            case (#tuple(a, b)) {
+                                                index.findBetween(a, b);
+                                            };
+                                            case _ {
+                                                return #err("Value should be a tuple for column " # crit.key);
+                                            };
+                                        };
+                                    };
                                     case _ [];
                                 };
                                 
@@ -601,6 +632,16 @@ module {
                                     case (#lte) index.findLte(val);
                                     case (#gt) index.findGt(val);
                                     case (#gte) index.findGte(val);
+                                    case (#between) {
+                                        switch(val) {
+                                            case (#tuple(a, b)) {
+                                                index.findBetween(a, b);
+                                            };
+                                            case _ {
+                                                return #err("Value should be a tuple for column " # crit.key);
+                                            };
+                                        };
+                                    };
                                     case _ [];
                                 };
 
@@ -673,6 +714,42 @@ module {
             };
         };
 
+        func _filterByStartsWith(
+            crit: Criteria,
+            ids: Set.Set<Id>
+        ): Result.Result<Set.Set<Id>, Text> {
+            switch(crit.value) {
+                case (#nil) {
+                    return #err("Value can't be null on column " # crit.key);
+                };
+                case (#text(val)) {
+                    switch(prefixIndexes.get(crit.key)) {
+                        case null {
+                            return #err("No index found for column " # crit.key);
+                        };
+                        case (?index) {
+                            let value = Utils.toLower(val);
+                            switch(index.get(val)) {
+                                case null {
+                                    return #ok(Set.empty<Id>());
+                                };
+                                case (?set) {
+                                    if(Set.size<Id>(ids) == 0) {
+                                        return #ok(set);
+                                    };
+
+                                    return #ok(Set.intersect<Id>(ids, set, _equalId));
+                                };
+                            };
+                        };
+                    };
+                };
+                case _ {
+                    return #err("Invalid type for column " # crit.key);
+                };
+            };
+        };
+
         ///
         public func find(
             criterias: ?[Criteria],
@@ -713,7 +790,7 @@ module {
                             return #err(msg);
                         };
                         case (#ok(res)) {
-                            ids := res.toArray();
+                            ids := Buffer.toArray(res);
                         };
                     };
                 };
@@ -724,7 +801,7 @@ module {
                                 return #err(msg);
                             };
                             case (#ok(res)) {
-                                ids := res.toArray();
+                                ids := Buffer.toArray(res);
                             };
                         };
                     }
@@ -762,6 +839,16 @@ module {
                                             };
                                             case (#contains) {
                                                 switch(_filterByContains(crit, set)) {
+                                                    case (#err(msg)) {
+                                                        return #err(msg);
+                                                    };
+                                                    case (#ok(res)) {
+                                                        set := res;
+                                                    };
+                                                };
+                                            };
+                                            case (#startsWith) {
+                                                switch(_filterByStartsWith(crit, set)) {
                                                     case (#err(msg)) {
                                                         return #err(msg);
                                                     };
@@ -830,11 +917,11 @@ module {
             // if there are no criterias, the rows are already sorted and sliced
             switch(criterias) {
                 case null {
-                    return #ok(res.toArray());
+                    return #ok(Buffer.toArray(res));
                 };
                 case (?criterias) {
                     if(criterias.size() == 0) {
-                        return #ok(res.toArray());
+                        return #ok(Buffer.toArray(res));
                     };
                 };
             };
@@ -873,7 +960,7 @@ module {
                 };
             };
 
-            return #ok(res.toArray());
+            return #ok(Buffer.toArray(res));
         };
 
         func _findAll(
@@ -1313,7 +1400,7 @@ module {
                             return #err(msg);
                         };
                         case (#ok(res)) {
-                            ids := res.toArray();
+                            ids := Buffer.toArray(res);
                         };
                     };
                 };
@@ -1324,7 +1411,7 @@ module {
                                 return #err(msg);
                             };
                             case (#ok(res)) {
-                                ids := res.toArray();
+                                ids := Buffer.toArray(res);
                             };
                         };
                     }
@@ -1362,6 +1449,16 @@ module {
                                             };
                                             case (#contains) {
                                                 switch(_filterByContains(crit, set)) {
+                                                    case (#err(msg)) {
+                                                        return #err(msg);
+                                                    };
+                                                    case (#ok(res)) {
+                                                        set := res;
+                                                    };
+                                                };
+                                            };
+                                            case (#startsWith) {
+                                                switch(_filterByStartsWith(crit, set)) {
                                                     case (#err(msg)) {
                                                         return #err(msg);
                                                     };
@@ -1467,6 +1564,41 @@ module {
                             switch(key) {
                                 case (#text(val)) {
                                     index.put(val, _id);
+                                };
+                                case _ {
+                                };
+                            };
+                        };
+                    };
+                };
+            };
+
+            // is prefixed search allowed?
+            if(props.prefixed) {
+                switch(prefixIndexes.get(column)) {
+                    case null {
+                        assert false; loop { };
+                    };
+                    case (?index) {
+                        for(key in keys.vals()) {
+                            switch(key) {
+                                case (#text(val)) {
+                                    var pref = "";
+                                    for(char in Text.toIter(val)) {
+                                        pref := Text.concat(pref, Text.fromChar(char));
+                                        
+                                        let ids = switch(index.get(pref)) {
+                                            case null {
+                                                Set.empty<Id>();
+                                            };
+                                            case (?ids) {
+                                                ids;
+                                            };
+                                        }; 
+                                        
+                                        let set = Set.put<Id>(ids, _id, _hashId(_id), _equalId);
+                                        index.put(pref, set);
+                                    };
                                 };
                                 case _ {
                                 };
@@ -1675,6 +1807,42 @@ module {
                     };
                 };
             };
+
+            // is prefixed search allowed?
+            if(props.prefixed) {
+                switch(prefixIndexes.get(column)) {
+                    case null {
+                    };
+                    case (?index) {
+                        for(key in keys.vals()) {
+                            switch(key) {
+                                case (#text(val)) {
+                                    var pref = "";
+                                    for(char in Text.toIter(val)) {
+                                        pref := Text.concat(pref, Text.fromChar(char));
+
+                                        switch(index.get(pref)) {
+                                            case null {
+                                            };
+                                            case (?ids) {
+                                                let deleted = Set.delete<Id>(ids, _id, _hashId(_id), _equalId);
+                                                if(Set.size<Id>(deleted) == 0) {
+                                                    index.delete(pref);
+                                                } 
+                                                else {
+                                                    index.put(pref, deleted);
+                                                };
+                                            };
+                                        };
+                                    };
+                                };
+                                case _ {
+                                };
+                            };
+                        };
+                    };
+                };
+            };
         };
 
         func _deleteFromIndexes(
@@ -1805,7 +1973,7 @@ module {
 				return #ok();
 			}
 			else {
-				return #err(errors.toArray());
+				return #err(Buffer.toArray(errors));
 			};
 		};
 
@@ -1823,7 +1991,7 @@ module {
                     };
                 };
             };
-            let res = entities.toArray();
+            let res = Buffer.toArray(entities);
             D.print("end table('" # schema.name # "') backup: " # Nat.toText(res.size()) # " entities");
             return res;
         };
@@ -1839,7 +2007,7 @@ module {
                 fields.add(key, val);
             };
 
-            return fields.toArray();
+            return Buffer.toArray(fields);
         };
 
         func _fieldsToMap(
@@ -1869,7 +2037,7 @@ module {
                 rows.add(?entity);
                 let mapLC = serialize(entity, true);
                 _insertIntoIndexes(_id, entity, mapLC);
-				i += 1;
+                i += 1;
             };
             D.print("end table('" # schema.name # "') restore: " # Nat.toText(rows.size()) # " rows");
         };
