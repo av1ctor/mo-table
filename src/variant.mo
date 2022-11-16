@@ -7,6 +7,7 @@
 import Text "mo:base/Text";
 import Array "mo:base/Array";
 import Buffer "mo:base/Buffer";
+import Hash "mo:base/Hash";
 import HashMap "mo:base/HashMap";
 import Nat "mo:base/Nat";
 import Nat8 "mo:base/Nat8";
@@ -190,6 +191,130 @@ module {
             };
             case (#greater) {
                 return 1;
+            };
+        };
+    };
+
+    public func equal(
+        a: Variant, 
+        b: Variant
+    ): Bool {
+        switch(compare(a, b)) {
+            case (#equal) {
+                return true;
+            };
+            case _ {
+                return false;
+            };
+        };
+    };
+
+    public func hash(
+        a: Variant
+    ): Hash.Hash {
+        switch(a) {
+            case (#text(a)) {
+                return Text.hash(a);
+            };
+            case (#nat(a)) {
+                return Nat32.fromNat(a);
+            };
+            case (#nat8(a)) {
+                return Nat32.fromNat(Nat8.toNat(a));
+            };
+            case (#nat16(a)) {
+                return Nat32.fromNat(Nat16.toNat(a));
+            };
+            case (#nat32(a)) {
+                return a;
+            };
+            case (#nat64(a)) {
+                return Nat32.fromNat(Nat64.toNat(a));
+            };
+            case (#int(a)) {
+                return Nat32.fromNat(Int.abs(a));
+            };
+            case (#int8(a)) {
+                return Nat32.fromNat(Int.abs(Int8.toInt(a)));
+            };
+            case (#int16(a)) {
+                return Nat32.fromNat(Int.abs(Int16.toInt(a)));
+            };
+            case (#int32(a)) {
+                return Nat32.fromNat(Int.abs(Int32.toInt(a)));
+            };
+            case (#int64(a)) {
+                return Nat32.fromNat(Int.abs(Int64.toInt(a)));
+            };
+            case (#float(a)) {
+                return Text.hash(Float.format(#fix(8), a));
+            };
+            case (#bool(a)) {
+                return if(a) 1 else 0;
+            };
+            case (#blob(a)) {
+                return Blob.hash(a);
+            };
+            case (#nil) {
+                return 0;
+            };
+            case (_) {
+                assert false; loop {};
+            };
+        };
+    };
+
+    public func toText(
+        a: Variant
+    ): Text {
+        switch(a) {
+            case (#text(a)) {
+                return a;
+            };
+            case (#nat(a)) {
+                return Nat.toText(a);
+            };
+            case (#nat8(a)) {
+                return Nat8.toText(a);
+            };
+            case (#nat16(a)) {
+                return Nat16.toText(a);
+            };
+            case (#nat32(a)) {
+                return Nat32.toText(a);
+            };
+            case (#nat64(a)) {
+                return Nat64.toText(a);
+            };
+            case (#int(a)) {
+                return Int.toText(a);
+            };
+            case (#int8(a)) {
+                return Int8.toText(a);
+            };
+            case (#int16(a)) {
+                return Int16.toText(a);
+            };
+            case (#int32(a)) {
+                return Int32.toText(a);
+            };
+            case (#int64(a)) {
+                return Int64.toText(a);
+            };
+            case (#float(a)) {
+                return Float.toText(a);
+            };
+            case (#bool(a)) {
+                return if(a) "true" else "false";
+            };
+            case (#blob(a)) {
+                return Nat32.toText(Blob.hash(a));
+            };
+            case (#nil) {
+                return "null";
+            };
+            case (_) {
+                assert false; loop {};
             };
         };
     };
@@ -618,7 +743,7 @@ module {
         for(e in hm.entries()) {
             map.add({key = e.0; value = e.1});
         };
-        map.toArray();
+        Buffer.toArray(map);
     };
 
     public func getMap(
