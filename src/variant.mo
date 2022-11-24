@@ -264,6 +264,71 @@ module {
         };
     };
 
+    public func isTypeOfEqual(
+        a: Variant, 
+        b: Variant
+    ): Bool {
+        switch(a, b) {
+            case (#text(_), #text(_)) {
+                return true;
+            };
+            case (#nat(_), #nat(_)) {
+                return true;
+            };
+            case (#nat8(_), #nat8(_)) {
+                return true;
+            };
+            case (#nat16(_), #nat16(_)) {
+                return true;
+            };
+            case (#nat32(_), #nat32(_)) {
+                return true;
+            };
+            case (#nat64(_), #nat64(_)) {
+                return true;
+            };
+            case (#int(_), #int(_)) {
+                return true;
+            };
+            case (#int8(_), #int8(_)) {
+                return true;
+            };
+            case (#int16(_), #int16(_)) {
+                return true;
+            };
+            case (#int32(_), #int32(_)) {
+                return true;
+            };
+            case (#int64(_), #int64(_)) {
+                return true;
+            };
+            case (#float(_), #float(_)) {
+                return true;
+            };
+            case (#bool(_), #bool(_)) {
+                return true;
+            };
+            case (#blob(_), #blob(_)) {
+                return true;
+            };
+            case (#array(_), #array(_)) {
+                return true;
+            };
+            case(#map(_), #map(_)) {
+                return true;
+            };
+            case (#tuple(_), #tuple(_)) {
+                return true;
+            };
+            case (#nil, #nil) {
+                return true;
+            };
+            case (_, _) {
+                return false
+            };
+        };
+    };
+
     public func toText(
         a: Variant
     ): Text {
