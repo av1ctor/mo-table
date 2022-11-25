@@ -973,9 +973,8 @@ module {
                     return _findAllById(#asc, limit);
                 };
                 case (?sortBy) {
-                    if(sortBy.size() > 1) {
-                        //TODO: implement multi-sorting
-                        return #err("Multi sorting is no supported yet :/");
+                    if(sortBy.size() == 0) {
+                        return _findAllById(#asc, limit);
                     };
 
                     let sort = sortBy[0];
